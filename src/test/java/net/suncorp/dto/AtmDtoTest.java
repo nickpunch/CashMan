@@ -19,4 +19,14 @@ public class AtmDtoTest {
         assertThat(testDto.getAvailableMoney().get(TWENTIES), is(20));
         assertThat(moneyTotal, is(900));
     }
+
+    @Test
+    public void testMoneyDispenser() {
+        testDto.dispenseFiftyDollarNotes(5);
+        testDto.dispenseTwentyDollarNotes(10);
+        assertThat(testDto.getAvailableMoney().get(FIFTIES), is(5));
+        assertThat(testDto.getAvailableMoney().get(TWENTIES), is(10));
+        assertThat(testDto.checkIfNotesAvailable(FIFTIES,2), is(true));
+        assertThat(testDto.checkIfNotesAvailable(TWENTIES,25), is(false));
+    }
 }

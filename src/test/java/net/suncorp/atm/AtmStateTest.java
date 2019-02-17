@@ -8,6 +8,7 @@ import java.util.Map;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class AtmStateTest {
     private int fifties = 5;
@@ -127,5 +128,25 @@ public class AtmStateTest {
         assertThat(testAtmState.getMoneyTotal(), is(100));
         assertThat(testAtmState.getAvailableMoney().get(AtmDenomination.FIFTIES), is(0));
         assertThat(testAtmState.getAvailableMoney().get(AtmDenomination.TWENTIES), is(5));
+    }
+
+    @Test(expected = AtmException.class)
+    public void testExecutes30SpecialRequirement() throws Exception {
+        testAtmState.executeWithdrawal(30);
+    }
+
+    @Test
+    public void testExecutes200NotEnough50sinTheMachine() throws Exception {
+        testAtmState = new AtmState(2, 10);
+        testAtmState.executeWithdrawal(200);
+        assertThat(testAtmState.getMoneyTotal(), is(100));
+        assertThat(testAtmState.getAvailableMoney().get(AtmDenomination.FIFTIES), is(0));
+        assertThat(testAtmState.getAvailableMoney().get(AtmDenomination.TWENTIES), is(5));
+    }
+
+    @Test(expected = AtmException.class)
+    public void testEmptyMachineGracefulFail() throws Exception {
+        testAtmState = new AtmState(0, 0);
+        testAtmState.executeWithdrawal(200);
     }
 }

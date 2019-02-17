@@ -10,15 +10,13 @@ import static net.suncorp.atm.AtmDenomination.TWENTIES;
 
 public class AtmState {
     private AtmDto currentState;
-    private Map<AtmDenomination, Integer> requestMap;
     private boolean operationComplete;
+    private int requestFifties = 0;
 
     public void executeWithdrawal(int amount) throws Exception {
         int fCount = 0;
         int tCount = 0;
         operationComplete = false;
-
-        requestMap = new HashMap<>();
 
         if (currentState.calculateTotalMoneyValue() > 0) {
 
@@ -31,7 +29,7 @@ public class AtmState {
                 double modAmount = amount % divisor;
 
                 if (amount < 100) {
-                    divisor=0;
+                    divisor = 0;
                 }
 
                 int dispensableF = amount - divisor - (int) modAmount;
@@ -40,7 +38,7 @@ public class AtmState {
                 calculateDispenseTwentyDollarNotesCombinationOnly(dispensableT, tCount);
             }
         } else {
-            throw new Exception();
+            throw new AtmException("Unable to dispense the required amount, no money in the machine");
         }
     }
 
@@ -53,67 +51,50 @@ public class AtmState {
             if (workAmount == 0) {
                 int twenties = currentState.getAvailableMoney().get(TWENTIES) - tCount;
                 updateDollarNoteCountInTheMachineIfTransactionValid(TWENTIES, twenties);
+                if (requestFifties != 0) {
+                    int fifties = currentState.getAvailableMoney().get(FIFTIES) - requestFifties;
+                    updateDollarNoteCountInTheMachineIfTransactionValid(FIFTIES, fifties);
+                }
             } else {
                 calculateDispenseTwentyDollarNotesCombinationOnly(workAmount, tCount);
             }
         } else {
-
-            if (workAmount == 0) {
-                requestMap.put(TWENTIES, tCount);
-                updateDollarNoteCountInTheMachineIfTransactionValid(requestMap);
-            } else {
-                throw new Exception();
-            }
-
+            throw new AtmException("Unable to dispense the required amount, not enough TWENTY " +
+                    "dollar notes");
         }
     }
 
     private void calculateDispenseFiftyDollarNotesCombinationOnly(int amount, int fCount) throws Exception {
         int workAmount = amount;
-        workAmount = workAmount - 50;
-        fCount++;
 
         if (currentState.checkIfNotesAvailable(FIFTIES, fCount)) {
+
             if (workAmount == 0) {
                 int fifties = currentState.getAvailableMoney().get(FIFTIES) - fCount;
                 updateDollarNoteCountInTheMachineIfTransactionValid(FIFTIES, fifties);
             } else {
+                workAmount = workAmount - 50;
+                fCount++;
                 calculateDispenseFiftyDollarNotesCombinationOnly(workAmount, fCount);
             }
         } else {
             if (!operationComplete) {
-                requestMap.put(FIFTIES, fCount);
+                requestFifties = fCount - 1;
+                workAmount = workAmount + 50;
                 calculateDispenseTwentyDollarNotesCombinationOnly(workAmount, 0);
             }
         }
+
     }
 
-    private void updateDollarNoteCountInTheMachineIfTransactionValid(AtmDenomination denom, int notes)
-            throws Exception {
-        if (notes >= 0) {
+    private void updateDollarNoteCountInTheMachineIfTransactionValid(AtmDenomination denom, int notes) {
+        if (FIFTIES.equals(denom))
+            currentState.dispenseFiftyDollarNotes(notes);
 
-            if (FIFTIES.equals(denom))
-                currentState.dispenseFiftyDollarNotes(notes);
+        if (TWENTIES.equals(denom))
+            currentState.dispenseTwentyDollarNotes(notes);
 
-            if (TWENTIES.equals(denom))
-                currentState.dispenseTwentyDollarNotes(notes);
-
-            operationComplete = true;
-        } else {
-            //TODO Define proper exception for not having enough notes
-            throw new Exception();
-        }
-    }
-
-    private void updateDollarNoteCountInTheMachineIfTransactionValid(Map<AtmDenomination, Integer> requestMap) throws Exception {
-        if (requestMap != null) {
-            currentState.dispenseFiftyDollarNotes(requestMap.get(FIFTIES));
-            currentState.dispenseTwentyDollarNotes(requestMap.get(TWENTIES));
-            operationComplete = true;
-        } else {
-            //TODO Define proper exception for not having enough notes
-            throw new Exception();
-        }
+        operationComplete = true;
     }
 
     private boolean canBeSatisfiedWithFiftiesOnly(int amount) {

@@ -9,8 +9,6 @@ public class AtmDto {
     public static final AtmDenomination FIFTIES = AtmDenomination.FIFTIES;
     public static final AtmDenomination TWENTIES = AtmDenomination.TWENTIES;
 
-    //    @Value("#{${available.money.map}}")
-
     private Map<AtmDenomination, Integer> availableMoney;
 
     public AtmDto(int fiftyNotes, int twentyNotes) {
@@ -49,9 +47,5 @@ public class AtmDto {
             return true;
         }
         return false;
-    }
-
-    public int getNotes(AtmDenomination notes) {
-        return availableMoney.get(notes);
     }
 }
